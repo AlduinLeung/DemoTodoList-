@@ -1,74 +1,69 @@
 import React,{Component} from 'react'
-import 'antd/dist/antd.css' 
-import store from './store'
-import axios from 'axios'
-import {getInitList,getInputChangeAction,getAddItemAction,getDeleteItemAction,initListAction} from './store/actionCreators'
-import TodolistUI from './TolistUI.js'
-
-class TodoList extends Component{     //这里只是负责业务逻辑和功能实现，不负责页面渲染，涉及到组件拆分
-    constructor(props){
-        super(props);
-       this.state=store.getState();
-       this.handleInputChange=this.handleInputChange.bind(this);
-       this.handleStoreChange=this.handleStoreChange.bind(this);
-       this.handleButtonOnclick=this.handleButtonOnclick.bind(this);
-       this.handleItemClick=this.handleItemClick.bind(this )
-       store.subscribe(this.handleStoreChange)
-       
-    }
-
-//当组件发生变化时，重新调用store.getState()然后进行数据替换
-    handleStoreChange(){
-        this.setState(store.getState()) 
-    }
-
-// 改变输入框中的内容
-    handleInputChange(e){
-        // const action={ //通过actionCreator统一管理action
-        //     type:CHANGE_INPUT_VALUE,
-        //     inputValue:e.target.value
-        // }
-        const action=getInputChangeAction(e.target.value)
-        store.dispatch(action);
-        console.log(store.getState())
-    } 
-//添加todoitem
-    handleButtonOnclick(){
-    //   const action={
-    //         type:ADD_TODO_ITEM,
-    //     }
-    const action=getAddItemAction(); 
-    store.dispatch(action);  
-    }
-
-
-//删除item
-    handleItemClick(index){
-        // const action={
-        //     type:DELETE_TODOITEM,
-        //     index
-        // }
-        const action=getDeleteItemAction(index);
-        store.dispatch(action)    
-    }
-
+import store from './store/index'
+import {connect} from 'react-redux'
+import { act } from 'react-dom/test-utils'
+class TodoList extends Component{
+    // constructor(props){
+    //     super(props);
+    //     this.state=store.getState();  //通过getState方法来获取store里的数据来赋给当前的state  
+    // } 
     render(){
-        return  (<TodolistUI 
-         inputValue={this.state.inputValue}
-         handleInputChange={this.handleInputChange}
-         handleButtonOnclick={this.handleButtonOnclick}
-         list={this.state.list}
-         handleItemClick={this.handleItemClick}
-         handleStoreChange={this.handleStoreChange}
-
-        />)
+        return(
+        <div>
+        <div>
+            <input value={this.props.inputValue} onChange={this.props.changeInputValue}/> 
+            <button onClick={this.props.handleClick}>提交</button>
+            <div>
+                <ul>
+                    {
+                        this.props.list.map((item,index)=>{
+                            return <li onClick={(index)=>{this.props.handleDelete(index)}} key={index}>{item}</li> //map every item to<li>
+                        })
+                    }
+                </ul>
+            </div>
+        </div>
+        </div>)
     }
-    componentDidMount(){
-       const action=getInitList();
-       store.dispatch(action)
+    handleInputChange(e){
+        console.log(e.target.value)
+        
     }
 }
 
+const mapStatetoProps=(state)=>{
+    return{
+        inputValue:state.inputValue,     //这里把store里的inputValue映射到
+        list:state.list
+    }
+}
+//store.dispatch,props
+const mapDispatchToProps=(dispatch)=>{
+     return{
+        changeInputValue(e){
+            const action={               //这里可以继续拆分，actionCreator 和actionType
+                type: 'change_input_value',
+                value:e.target.value
+            } 
+            dispatch(action) 
+            //console.log(e.target.value)
+        },
+        handleClick(){
+            const action={
+                type:'add_Item',
+            }
+            dispatch(action);
+           
+        },
+        handleDelete(index){
+            const action={
+                type:'delete_Item',
+                index
+            }
+            dispatch(action)
+           // console.log(index)
+        }
+     }
 
-
-export  default TodoList 
+}
+export default connect (mapStatetoProps,mapDispatchToProps)(TodoList);    //todolist和connect做连接
